@@ -68,15 +68,33 @@ def construir_grafo_mst(df):
     return MST
 
 def dibujar_grafo_spring(G):
-    """Dibujo abstracto del grafo (spring layout) con NetworkX."""
+    """
+    Dibujo abstracto del grafo con NetworkX.
+    Usamos kamada_kawai_layout para evitar la dependencia de scipy.
+    """
     import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(6, 6))
-    pos = nx.spring_layout(G, k=0.15, iterations=30)
-    nx.draw(G, pos, node_size=20, node_color="skyblue",
-            edge_color="gray", with_labels=False, ax=ax)
+
+    # Layout que NO necesita scipy (a diferencia de spring_layout)
+    if G.number_of_nodes() > 0:
+        pos = nx.kamada_kawai_layout(G)  # también podrías usar nx.circular_layout(G)
+    else:
+        pos = {}
+
+    nx.draw(
+        G,
+        pos,
+        node_size=20,
+        node_color="skyblue",
+        edge_color="gray",
+        with_labels=False,
+        ax=ax,
+    )
     ax.set_title(f"Grafo – {G.number_of_nodes()} nodos, {G.number_of_edges()} aristas")
     ax.axis("off")
     return fig
+
 
 def dibujar_mapa_folium(G, camino=None, solo_ruta=False):
     """
@@ -434,6 +452,7 @@ st.sidebar.header("⚙️ Configuración del aplicativo")
 
 tipo_grafo = st.sidebar.selectbox("Tipo de grafo", ["k-NN", "MST"])
 k_vecinos = st.sidebar.slider("k vecinos (solo k-NN)", 1, 6, 3)
+
 
 
 
