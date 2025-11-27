@@ -233,15 +233,36 @@ except FileNotFoundError:
     st.stop()
 
 
+df = pd.read_excel(DATA_PATH)
 
+# Nos quedamos solo con las columnas necesarias
 df = df[["RUC", "RAZON_SOCIAL", "LATITUD", "LONGITUD"]].copy()
-df["RUC"] = df["RUC"].astype(str).str.strip()   # 🔴 NUEVO: RUC siempre como texto
-df = df.dropna(subset=["LATITUD","LONGITUD"])
-df = df.drop_duplicates(subset=["RUC"])
-df["LATITUD"] = df["LATITUD"].astype(float)
+
+# RUC siempre como texto
+df["RUC"] = df["RUC"].astype(str).str.strip()
+
+# --- LIMPIEZA ROBUSTA DE COORDENADAS ---
+for col in ["LATITUD", "LONGITUD"]:
+    # Pasamos a texto, quitamos espacios y cambiamos coma por punto
+    df[col] = (
+        df[col]
+        .astype(str)           # por si vienen números mezclados con texto
+        .str.strip()
+        .str.replace(",", ".", regex=False)
+    )
+    # Convertimos a número; lo que no se pueda se vuelve NaN
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+# Eliminamos filas sin coordenadas válidas
+df = df.dropna(subset=["LATITUD", "LONGITUD"])
+
+# Aseguramos tipo float y quitamos RUC duplicados
+df["LATITUD"]  = df["LATITUD"].astype(float)
 df["LONGITUD"] = df["LONGITUD"].astype(float)
+df = df.drop_duplicates(subset=["RUC"]).reset_index(drop=True)
 
 st.success(f"Datos cargados correctamente desde {DATA_PATH}. Registros válidos: {len(df)}")
+
 
 
 
@@ -413,6 +434,7 @@ st.sidebar.header("⚙️ Configuración del aplicativo")
 
 tipo_grafo = st.sidebar.selectbox("Tipo de grafo", ["k-NN", "MST"])
 k_vecinos = st.sidebar.slider("k vecinos (solo k-NN)", 1, 6, 3)
+
 
 
 
